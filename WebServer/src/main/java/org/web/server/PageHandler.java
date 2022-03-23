@@ -12,7 +12,7 @@ public class PageHandler implements HttpHandler {
 	
 	private byte[] pageBytes;
 	
-	public PageHandler(String pageName) throws IOException {
+	protected PageHandler(String pageName) throws IOException {
 		File page = new File("src/main/resources/" + pageName);
 		FileInputStream pageInputStream = new FileInputStream(page);
 		pageBytes = pageInputStream.readAllBytes();

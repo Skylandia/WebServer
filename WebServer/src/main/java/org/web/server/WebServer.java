@@ -10,6 +10,10 @@ import com.sun.net.httpserver.HttpServer;
 
 public class WebServer {
 	
+	/**
+	 * Creates a webserver on port 8080
+	 * @throws IOException
+	 */
 	public WebServer() throws IOException {
 		System.out.println("Starting HTTP server");
 		HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);

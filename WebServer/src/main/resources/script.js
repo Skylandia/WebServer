@@ -11,6 +11,7 @@ socket.on('connect', function() {
 });
 function sendMessage() {
 	let message = prompt("Enter Message");
+	if (message == null) return; // If the cancel button is pressed
 	socket.emit("chat message", {message: message});
 	window.requestAnimationFrame(sendMessage);
 }

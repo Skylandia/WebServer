@@ -7,12 +7,15 @@ import org.web.socket.Client;
 import org.web.socket.WebSocket;
 
 public class Main {
-	
+
 	private static HashMap<Client, String> usernames = new HashMap<>();
 
 	public static void main(String[] args) throws IOException {
+		// Start the webserver and the websocket
 		new WebServer();
 		WebSocket ws = new WebSocket(80);
+
+		// Add the listeners for the websocketß
 		ws.on("connect", (client) -> {
 			JSONObject data = new JSONObject();
 			data.put("sender", "Server");
@@ -28,5 +31,4 @@ public class Main {
 			System.out.println(usernames.get(client) + ": " + data.getString("message"));
 		});
 	}
-
 }

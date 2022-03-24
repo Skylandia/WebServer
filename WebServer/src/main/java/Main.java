@@ -15,7 +15,7 @@ public class Main {
 		new WebServer();
 		WebSocket ws = new WebSocket(80);
 
-		// Add the listeners for the websocketß
+		// Add the listeners for the websocket
 		ws.on("connect", (client) -> {
 			JSONObject data = new JSONObject();
 			data.put("sender", "Server");

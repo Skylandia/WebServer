@@ -6,8 +6,6 @@ import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.logging.Level;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
 
 import com.sun.net.httpserver.HttpServer;
 
@@ -16,14 +14,14 @@ import org.web.WebLogger;
 public class WebServer {
 
 	/**
-	 * Creates a webserver on port 8080
+	 * Creates a webserver on port 80
 	 * 
 	 * @throws IOException
 	 */
 	public WebServer() throws IOException {
 		WebLogger.log(Level.INFO, "Started HTTP server");
 
-		HttpServer server = HttpServer.create(new InetSocketAddress(8080), 1);
+		HttpServer server = HttpServer.create(new InetSocketAddress(80), 1);
 
 		// Add all files in the resource directory to the webserver
 		File resourceDirectory = new File("src/main/resources");

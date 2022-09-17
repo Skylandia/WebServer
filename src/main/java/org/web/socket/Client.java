@@ -11,6 +11,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 public class Client {
@@ -52,31 +53,30 @@ public class Client {
 				
 				// Read
 				while (!socket.isClosed()) {
-					byte[] first = new byte[1];
-					in.read(first);
-					
-					if ((first[0] & 0x0F) != 0x01) // If the last 4 bits of first[0] is not 0001 (text opcode)
-						break;
-					
-					//System.out.println("Meta: " + (toUnsignedByte(first[0]))); // Should be 129 (or binary 1000 0001)
-					
-					byte[] length = new byte[1];
-					in.read(length);
-					
-					//System.out.println("Length: " + (toUnsignedByte(length[0]) - 128)); // Should be between 0 and 125
-					
-					byte[] key = new byte[4];
-					in.read(key);
-					
-					byte[] encodedMessage = new byte[toUnsignedByte(length[0]) - 128]; // We also have to subtract 128 to get the length
-					in.read(encodedMessage);
-					
-					byte[] decodedMessage = new byte[encodedMessage.length];
-					for (int i = 0; i < encodedMessage.length; i++) {
-						decodedMessage[i] = (byte) (encodedMessage[i] ^ key[i & 0x3]);
+					try { // Ignore JSON errors and don't crash the program
+						byte[] first = new byte[1];
+						in.read(first);
+						
+						if ((first[0] & 0x0F) != 0x01) // If the last 4 bits of first[0] is not 0001 (text opcode)
+							break;
+						
+						byte[] length = new byte[1];
+						in.read(length);
+						
+						byte[] key = new byte[4];
+						in.read(key);
+						
+						byte[] encodedMessage = new byte[toUnsignedByte(length[0]) - 128]; // We also have to subtract 128 to get the length
+						in.read(encodedMessage);
+						
+						byte[] decodedMessage = new byte[encodedMessage.length];
+						for (int i = 0; i < encodedMessage.length; i++) {
+							decodedMessage[i] = (byte) (encodedMessage[i] ^ key[i & 0x3]);
+						}
+						host.triggerEvent(new JSONObject(new String(decodedMessage)), this);
+					} catch (JSONException e) {
+						e.printStackTrace();
 					}
-					host.triggerEvent(new JSONObject(new String(decodedMessage)), this);
-					//System.out.println("Message From " + id + ": " + new String(decodedMessage));
 				}
 				s.close();
 				host.triggerEvent(new JSONObject("{'event': 'disconnect'}"), this);
@@ -94,9 +94,11 @@ public class Client {
 		packet.put("data", data);
 		String packetStr = packet.toString();
 		try {
-			byte[] header = new byte[2];
-			header[0] = (byte) -127; // 1000 0001
-			header[1] = (byte) packetStr.length();
+			byte[] header = new byte[4];
+			header[0] = -127; // 1000 0001
+			header[1] = 126; // 126 (2 bytes follow)
+			header[2] = (byte) (packetStr.length() >>> 8); // First byte of the integer
+			header[3] = (byte) (packetStr.length()); // Last byte of the integer
 			socket.getOutputStream().write(header);
 			socket.getOutputStream().write(packetStr.getBytes());
 		} catch (IOException e) {

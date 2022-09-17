@@ -17,10 +17,10 @@ public class WebSocket {
     private HashMap<String, ClientDataEvent> dataHooks = new HashMap<>();
 
     /**
-     * Creates a websocket for communication with a client browser on port 80
+     * Creates a websocket for communication with a client browser on port 3000
      */
     public WebSocket() {
-        new WebSocket(80);
+        new WebSocket(3000);
     }
 
     /**

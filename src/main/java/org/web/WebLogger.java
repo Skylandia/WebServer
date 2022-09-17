@@ -9,7 +9,6 @@ public class WebLogger {
     private static final Logger webLogger = Logger.getLogger(WebLogger.class.getName());
 
     public static void log(Level level, String info) {
-        webLogger.
         webLogger.log(level, info);
     }
 }

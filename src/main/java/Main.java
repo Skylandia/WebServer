@@ -8,12 +8,17 @@ import org.web.socket.WebSocket;
 
 public class Main {
 
-	private static HashMap<Client, String> usernames = new HashMap<>();
+	private static final HashMap<Client, String> usernames = new HashMap<>();
 
 	public static void main(String[] args) throws IOException {
 		// Start the webserver and the websocket
 		new WebServer();
-		WebSocket ws = new WebSocket(80);
+
+//		reigsterWebsocket();
+	}
+
+	private static void reigsterWebsocket() {
+		WebSocket ws = new WebSocket();
 
 		// Add the listeners for the websocket
 		ws.on("connect", (client) -> {

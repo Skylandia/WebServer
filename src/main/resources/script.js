@@ -1,4 +1,4 @@
-let socket = new io("ws://localhost:80");
+let socket = new io("ws://localhost:3000");
 
 socket.on('chat message', function(data) {
 	console.log(data.sender + ": " + data.message)

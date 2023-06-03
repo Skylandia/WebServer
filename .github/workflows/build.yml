@@ -14,8 +14,9 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
     - name: Build with Maven
-      run: mvn --batch-mode --update-snapshots verify
-    - run: mkdir staging && cp target/*.jar staging
+      run: ./gradlew build
+      env:
+        GITHUB_BUILD_NUMBER: ${{ github.run_number }}
     - uses: actions/upload-artifact@v3
       with:
         name: Package

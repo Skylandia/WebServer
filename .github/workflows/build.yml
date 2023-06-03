@@ -19,4 +19,4 @@ jobs:
     - uses: actions/upload-artifact@v3
       with:
         name: Package
-        path: .github/artifacts/WebServer-1.0.0.jar
+        path: staging

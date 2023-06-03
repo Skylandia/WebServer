@@ -25,6 +25,10 @@ public class WebServer {
 
 		// Add all files in the resource directory to the webserver
 		File resourceDirectory = new File("src/main/resources");
+		if (!resourceDirectory.exists()) {
+			WebLogger.error("Folder 'src/main/resources' does not exist!");
+			System.exit(0);
+		}
 		int resourceCount = addResources(server, resourceDirectory, resourceDirectory);
 
 		WebLogger.log("Finished registering " + resourceCount + " resources");
@@ -33,7 +37,7 @@ public class WebServer {
 		// Reroute http://example.com/ to http://example.com/index.html
 		server.createContext("/", new PageHandler("/index.html"));
 
-		WebLogger.log("Rerouted root page \"/\" to \"/index.html\"");
+		WebLogger.log("Rerouted root page '/' to '/index.html'");
 		WebLogger.buffer();
 
 		//server.setExecutor(null);

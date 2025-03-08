@@ -64,7 +64,7 @@ public class WebSocket {
 
     /**
      * Allows listening for ClientEvents passed over the websocket.
-     * This is where a client connects or disconnects from the server via it's websocket connection.
+     * This is where a client connects or disconnects from the server via its websocket connection.
      * 
      * @param event The event called by the client
      * @param hook The handler to pass the ClientEvent to every occurance

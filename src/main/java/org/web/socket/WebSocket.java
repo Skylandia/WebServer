@@ -13,7 +13,7 @@ import org.web.socket.event.*;
 
 public class WebSocket {
 
-    private static final Logger LOGGER = LogManager.getLogger();
+    protected static final Logger LOGGER = LogManager.getLogger(WebSocket.class);
 
     private final ArrayList<Client> clients = new ArrayList<>();
 

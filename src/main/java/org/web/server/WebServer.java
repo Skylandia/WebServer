@@ -1,11 +1,11 @@
 package org.web.server;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Objects;
 
 import com.sun.net.httpserver.HttpServer;
 
@@ -14,61 +14,44 @@ import org.apache.logging.log4j.Logger;
 
 public class WebServer {
 
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Logger LOGGER = LogManager.getLogger(WebServer.class);
 
 	/**
 	 * Creates a webserver on port 80
-     */
+	 */
 	public WebServer() throws IOException {
+		this(80);
+	}
+
+	public WebServer(int port) throws IOException {
 		LOGGER.info("Started HTTP server");
 
-		HttpServer server = HttpServer.create(new InetSocketAddress(8080), 1);
+		HttpServer server = HttpServer.create(new InetSocketAddress(port), 1);
 
-		// Add all files in the resource directory to the webserver
-		File resourceDirectory = new File("src/main/resources");
-		if (!resourceDirectory.exists()) {
-			LOGGER.error("Folder 'src/main/resources' does not exist!");
-			System.exit(0);
-		}
-		int resourceCount = addResources(server, resourceDirectory, resourceDirectory);
+		server.createContext("/", exchange -> {
+			String path = exchange.getRequestURI().getPath();
 
-        LOGGER.info("Finished registering {} resources", resourceCount);
+			// Serve the index.html page
+			if (path.equals("/")) path = "/index.html";
 
-		// Reroute http://example.com/ to http://example.com/index.html
-		server.createContext("/", new PageHandler("/index.html"));
+			try (InputStream is = WebServer.class.getResourceAsStream("/static" + path)) {
+				// 404 page not found
+				if (is == null) {
+					exchange.sendResponseHeaders(404, -1);
+					return;
+				}
 
-		LOGGER.info("Rerouted root page '/' to '/index.html'");
-
-		//server.setExecutor(null);
+				// 200 + page content
+				byte[] bytes = is.readAllBytes();
+				exchange.getResponseHeaders().add("Content-Type", Files.probeContentType(Path.of(path)));
+				exchange.sendResponseHeaders(200, bytes.length);
+				try (OutputStream os = exchange.getResponseBody()) {
+					os.write(bytes);
+				}
+			}
+		});
 		server.start();
 
 		LOGGER.info("HTTP server successfully started");
-	}
-
-	private static int addResources(HttpServer server, File resourceDirectory, File searchDirectory) throws IOException {
-		int resourceCount = 0;
-		for (File resource : Objects.requireNonNull(searchDirectory.listFiles())) {
-			if (resource.isDirectory()) {
-				resourceCount += addResources(server, resourceDirectory, resource);
-				continue;
-			}
-
-			addResource(server, resourceDirectory, resource);
-			resourceCount++;
-		}
-		return resourceCount;
-	}
-
-	private static void addResource(HttpServer server, File resourceDirectory, File resource) throws IOException {
-		String relativePath = relativePath(resourceDirectory, resource);
-		server.createContext("/" + relativePath, new PageHandler(relativePath));
-		LOGGER.info("Registered: {}", relativePath);
-	}
-
-	private static String relativePath(File source, File target) {
-		Path sourceFile = Paths.get(source.toURI());
-		Path targetFile = Paths.get(target.toURI());
-		Path relativePath = sourceFile.relativize(targetFile);
-		return relativePath.toString().replace('\\', '/');
 	}
 }

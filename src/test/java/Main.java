@@ -1,8 +1,5 @@
-import java.io.IOException;
 import java.util.HashMap;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 import org.web.server.WebServer;
 import org.web.socket.Client;
@@ -10,13 +7,11 @@ import org.web.socket.WebSocket;
 
 public class Main {
 
-	private static final Logger LOGGER = LogManager.getLogger();
 	private static final HashMap<Client, String> usernames = new HashMap<>();
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws Exception {
 		// Start the webserver and the websocket
-		new WebServer();
-		LOGGER.info("test");
+		new WebServer(8080);
 		registerWebsocket();
 	}
 
@@ -39,8 +34,6 @@ public class Main {
 			ws.broadcast("chat message", data);
 			System.out.println(usernames.get(client) + ": " + data.getString("message"));
 		});
-		ws.on("disconnect", (client) -> {
-			System.out.println(usernames.get(client) + " left");
-		});
+		ws.on("disconnect", (client) -> System.out.println(usernames.get(client) + " left"));
 	}
 }

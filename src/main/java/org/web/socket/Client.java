@@ -14,15 +14,10 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
 public class Client {
-
-	private static final Logger LOGGER = LogManager.getLogger();
 
 	public final UUID id;
 	private final Socket socket;
@@ -76,7 +71,7 @@ public class Client {
 						out.write(response, 0, response.length);
 					}
 				} catch (Exception e) {
-					LOGGER.error(e);
+					WebSocket.LOGGER.error(e);
 				}
 
 				host.triggerEvent(new JSONObject("{'event': 'connect'}"), this);
@@ -92,7 +87,7 @@ public class Client {
 						boolean rsv3 = (header[0] & 0x10) == 0x10;
 
 						if (!fin || rsv1 || rsv2 || rsv3) {
-							LOGGER.error("Unknown header received: fin {}, rsv1 {}, rsv2 {}, rsv3 {}", fin, rsv1, rsv2, rsv3);
+							WebSocket.LOGGER.error("Unknown header received: fin {}, rsv1 {}, rsv2 {}, rsv3 {}", fin, rsv1, rsv2, rsv3);
 							continue;
 						}
 
@@ -126,19 +121,19 @@ public class Client {
 								host.triggerEvent(new JSONObject("{'event': 'disconnect'}"), this);
 								return;
 							}
-                            case null -> LOGGER.error("Unknown opcode");
-							default -> LOGGER.error("Unhandled opcode");
+                            case null -> WebSocket.LOGGER.error("Unknown opcode");
+							default -> WebSocket.LOGGER.error("Unhandled opcode");
 						}
 					} catch (JSONException e) {
-						LOGGER.error(e);
+						WebSocket.LOGGER.error(e);
 					}
 				}
+				// This can be triggered before a username is selected
 				host.triggerEvent(new JSONObject("{'event': 'disconnect'}"), this);
 			} catch (IOException e) {
-				LOGGER.error(e);
+				WebSocket.LOGGER.error(e);
 			}
 		}).start();
-
 	}
 
 	private void doPong(byte[] payload) {
@@ -149,7 +144,7 @@ public class Client {
 			socket.getOutputStream().write(header.toByteArray());
 			socket.getOutputStream().write(payload);
 		} catch (IOException e) {
-			LOGGER.error(e);
+			WebSocket.LOGGER.error(e);
 		}
 	}
 
@@ -177,7 +172,7 @@ public class Client {
 			socket.getOutputStream().write(header.toByteArray());
 			socket.getOutputStream().write(packetBytes);
 		} catch (IOException e) {
-			LOGGER.error(e);
+			WebSocket.LOGGER.error(e);
 		}
 	}
 }

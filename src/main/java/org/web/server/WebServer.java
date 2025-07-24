@@ -5,51 +5,49 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 import com.sun.net.httpserver.HttpServer;
 
-import org.web.WebLogger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class WebServer {
 
+	private static final Logger LOGGER = LogManager.getLogger();
+
 	/**
 	 * Creates a webserver on port 80
-	 *
-	 * @throws IOException
-	 */
+     */
 	public WebServer() throws IOException {
-		WebLogger.log("Started HTTP server");
-		WebLogger.buffer();
+		LOGGER.info("Started HTTP server");
 
-		HttpServer server = HttpServer.create(new InetSocketAddress(80), 1);
+		HttpServer server = HttpServer.create(new InetSocketAddress(8080), 1);
 
 		// Add all files in the resource directory to the webserver
 		File resourceDirectory = new File("src/main/resources");
 		if (!resourceDirectory.exists()) {
-			WebLogger.error("Folder 'src/main/resources' does not exist!");
+			LOGGER.error("Folder 'src/main/resources' does not exist!");
 			System.exit(0);
 		}
 		int resourceCount = addResources(server, resourceDirectory, resourceDirectory);
 
-		WebLogger.log("Finished registering " + resourceCount + " resources");
-		WebLogger.buffer();
+        LOGGER.info("Finished registering {} resources", resourceCount);
 
 		// Reroute http://example.com/ to http://example.com/index.html
 		server.createContext("/", new PageHandler("/index.html"));
 
-		WebLogger.log("Rerouted root page '/' to '/index.html'");
-		WebLogger.buffer();
+		LOGGER.info("Rerouted root page '/' to '/index.html'");
 
 		//server.setExecutor(null);
 		server.start();
 
-		WebLogger.log("HTTP server successfully started");
-		WebLogger.buffer();
+		LOGGER.info("HTTP server successfully started");
 	}
 
 	private static int addResources(HttpServer server, File resourceDirectory, File searchDirectory) throws IOException {
 		int resourceCount = 0;
-		for (File resource : searchDirectory.listFiles()) {
+		for (File resource : Objects.requireNonNull(searchDirectory.listFiles())) {
 			if (resource.isDirectory()) {
 				resourceCount += addResources(server, resourceDirectory, resource);
 				continue;
@@ -64,7 +62,7 @@ public class WebServer {
 	private static void addResource(HttpServer server, File resourceDirectory, File resource) throws IOException {
 		String relativePath = relativePath(resourceDirectory, resource);
 		server.createContext("/" + relativePath, new PageHandler(relativePath));
-		WebLogger.log(String.format("Registered: /%s", relativePath));
+		LOGGER.info("Registered: {}", relativePath);
 	}
 
 	private static String relativePath(File source, File target) {

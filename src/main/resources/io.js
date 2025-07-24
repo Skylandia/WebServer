@@ -26,7 +26,7 @@ class io {
 		}
 	}
 	emit(event, data) {
-		let strData = "{'event': '" + new String(event) + "', 'data': '" + JSON.stringify(data) + "'}";
+		let strData = "{'event': '" + new String(event) + "', 'data': " + JSON.stringify(data) + "}";
 		this.#socket.send(strData);
 	}
 }

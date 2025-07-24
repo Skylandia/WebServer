@@ -4,5 +4,5 @@ import org.json.JSONObject;
 import org.web.socket.Client;
 
 public interface ClientDataEvent {
-	public void run(Client client, JSONObject data);
+	void run(Client client, JSONObject data);
 }

@@ -128,11 +128,11 @@ public class Client {
 						WebSocket.LOGGER.error(e);
 					}
 				}
-				// This can be triggered before a username is selected
-				host.triggerEvent(new JSONObject("{'event': 'disconnect'}"), this);
 			} catch (IOException e) {
 				WebSocket.LOGGER.error(e);
 			}
+			// This can be triggered before a username is selected
+			host.triggerEvent(new JSONObject("{'event': 'disconnect'}"), this);
 		}).start();
 	}
 

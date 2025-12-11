@@ -177,6 +177,8 @@ public class Client {
             WebSocket.LOGGER.error(e);
         }
 	}
+
+    // TODO documentation
     public void ping() {
         UUID uuid = UUID.randomUUID();
         try {

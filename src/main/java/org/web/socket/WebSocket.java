@@ -2,7 +2,6 @@ package org.web.socket;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -37,8 +36,7 @@ public class WebSocket {
             try (ServerSocket serverSocket = new ServerSocket(port)) {
                 LOGGER.info("Started WebSocket server");
                 while (true) {
-                    Socket clientSocket = serverSocket.accept();
-                    clients.add(new Client(clientSocket, this));
+                    new Client(serverSocket.accept(), this);
                 }
             } catch (IOException e) {
                 LOGGER.error("Unable to process client request", e);
@@ -49,6 +47,9 @@ public class WebSocket {
     protected void triggerEvent(JSONObject packet, Client client) {
         String event = packet.getString("event");
 
+        if (event.equals("connect")) {
+            clients.add(client);
+        }
         if (event.equals("disconnect")) {
             clients.remove(client);
         }

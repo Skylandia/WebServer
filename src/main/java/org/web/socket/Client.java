@@ -1,9 +1,6 @@
 package org.web.socket;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -52,7 +49,7 @@ public class Client {
 
 		new Thread(() -> {
 			try (
-				InputStream in = socket.getInputStream();
+				DataInputStream in = new DataInputStream(socket.getInputStream());
 				OutputStream out = socket.getOutputStream();
 		 		Scanner s = new Scanner(in, StandardCharsets.UTF_8)
 			) {
@@ -72,34 +69,39 @@ public class Client {
 					}
 				} catch (Exception e) {
 					WebSocket.LOGGER.error(e);
+                    return;
 				}
 
 				host.triggerEvent(new JSONObject("{'event': 'connect'}"), this);
 
 				// Read
 				while (!socket.isClosed()) {
-					try { // Ignore JSON errors and don't crash the program
+					try { // Don't crash the program over JSON errors
 						byte[] header = in.readNBytes(2);
 
-						boolean fin = (header[0] & 0x80) == 0x80;
+						boolean fin =  (header[0] & 0x80) == 0x80;
 						boolean rsv1 = (header[0] & 0x40) == 0x40;
 						boolean rsv2 = (header[0] & 0x20) == 0x20;
 						boolean rsv3 = (header[0] & 0x10) == 0x10;
 
 						if (!fin || rsv1 || rsv2 || rsv3) {
 							WebSocket.LOGGER.error("Unknown header received: fin {}, rsv1 {}, rsv2 {}, rsv3 {}", fin, rsv1, rsv2, rsv3);
-							continue;
+							// Does this not warrant disconnection?
+                            continue;
 						}
 
 						Opcode opcode = Opcode.parse(header[0] & 0x0F);
 						boolean mask = (header[1] & 0x80) == 0x80;
 						long payloadLength = (header[1] & 0x7F);
 						if (payloadLength == 126) {
-							payloadLength = ByteBuffer.wrap(in.readNBytes(2)).getShort();
+							payloadLength = in.readUnsignedShort();
 						} else if (payloadLength == 127) {
-							payloadLength = ByteBuffer.wrap(in.readNBytes(8)).getLong();
+                            // MSB is always 0, so we can use a signed long
+							payloadLength = in.readLong();
 						}
 
+                        // Don't handle a byte array that can't fit inside a single array
+                        // Triggers a disconnect event
 						if (payloadLength > Integer.MAX_VALUE)
 							break;
 
@@ -116,9 +118,13 @@ public class Client {
 
 						switch (opcode) {
 							case TEXT -> host.triggerEvent(new JSONObject(new String(payload)), this);
-							case PING -> doPong(payload);
+							case PING -> {
+                                doPong(payload);
+                                host.triggerEvent(new JSONObject().put("event", "ping"), this);
+                            }
+                            case PONG -> host.triggerEvent(new JSONObject().put("event", "pong"), this);
 							case CONNECTION_CLOSE -> {
-								host.triggerEvent(new JSONObject("{'event': 'disconnect'}"), this);
+								host.triggerEvent(new JSONObject().put("event", "disconnect"), this);
 								return;
 							}
                             case null -> WebSocket.LOGGER.error("Unknown opcode");
@@ -136,43 +142,58 @@ public class Client {
 		}).start();
 	}
 
-	private void doPong(byte[] payload) {
+	private void doPong(byte[] payload) throws IOException {
 		try (ByteArrayOutputStream header = new ByteArrayOutputStream()) {
-			header.write(0x8A); // fin + pong
-			header.write(payload.length);
+            header.write(0x8A); // fin + pong
+            header.write(payload.length);
 
-			socket.getOutputStream().write(header.toByteArray());
-			socket.getOutputStream().write(payload);
-		} catch (IOException e) {
-			WebSocket.LOGGER.error(e);
-		}
-	}
+            socket.getOutputStream().write(header.toByteArray());
+            socket.getOutputStream().write(payload);
+        }
+    }
 
 	public void emit(String event, JSONObject data) {
 		JSONObject packet = new JSONObject();
 		packet.put("event", event);
 		packet.put("data", data);
-		byte[] packetBytes = packet.toString().getBytes(StandardCharsets.UTF_8);
-		try {
-			ByteArrayOutputStream header = new ByteArrayOutputStream();
-
+		byte[] payload = packet.toString().getBytes(StandardCharsets.UTF_8);
+		try(ByteArrayOutputStream header = new ByteArrayOutputStream()) {
 			header.write(0x81); // fin + text
 
-			if (packetBytes.length > 65535) {
+			if (payload.length > 65535) {
 				header.write(127); // 8 bytes follow
-				// Most significant bit is always zero, so signed long is large enough to fully contain
-				header.writeBytes(ByteBuffer.allocate(8).putLong(packetBytes.length).array());
-			} else if (packetBytes.length > 125) {
+				// Most significant bit is always zero (payload length is never negative), so signed long is large enough to fully contain
+				header.writeBytes(ByteBuffer.allocate(8).putLong(payload.length).array());
+			} else if (payload.length > 125) {
 				header.write(126); // 2 bytes follow
-				header.writeBytes(ByteBuffer.allocate(2).putShort((short) packetBytes.length).array());
+				header.writeBytes(ByteBuffer.allocate(2).putShort((short) payload.length).array());
 			} else {
-				header.write(packetBytes.length);
+				header.write(payload.length);
 			}
 
 			socket.getOutputStream().write(header.toByteArray());
-			socket.getOutputStream().write(packetBytes);
+			socket.getOutputStream().write(payload);
 		} catch (IOException e) {
-			WebSocket.LOGGER.error(e);
-		}
+            WebSocket.LOGGER.error(e);
+        }
 	}
+    public void ping() {
+        UUID uuid = UUID.randomUUID();
+        try {
+            ByteArrayOutputStream header = new ByteArrayOutputStream();
+            header.write(0x89); // fin + ping
+
+            ByteBuffer bb = ByteBuffer.allocate(16);
+            bb.putLong(uuid.getMostSignificantBits());
+            bb.putLong(uuid.getLeastSignificantBits());
+            byte[] payload = bb.array();
+
+            header.write(payload.length);
+
+            socket.getOutputStream().write(header.toByteArray());
+            socket.getOutputStream().write(payload);
+        } catch (IOException e) {
+            WebSocket.LOGGER.error(e);
+        }
+    }
 }
